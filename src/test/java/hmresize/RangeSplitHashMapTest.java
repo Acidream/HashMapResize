@@ -1,6 +1,7 @@
 package hmresize;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -164,6 +165,25 @@ class RangeSplitHashMapTest {
             assertEquals(ref.put(extra, round), map.put(extra, round));
             TreeBinInvariants.verify(map);
         }
+    }
+
+    /** A removed bin head must not keep the root pointer, which would keep the rest of the bin reachable. */
+    @Test
+    void removedHeadDropsRootPointer() {
+        RangeSplitHashMap<CKey, Integer> map = new RangeSplitHashMap<>(256);
+        for (int id = 0; id < 20; id++) {
+            map.put(new CKey(id, TreeHashMap.unspread(id << 10 | 7)), id);
+        }
+        RangeSplitHashMap.RangeTreeNode<?, ?> head = (RangeSplitHashMap.RangeTreeNode<?, ?>) map.table[7];
+        map.remove(head.key);
+        assertNull(head.binRoot);
+
+        head = (RangeSplitHashMap.RangeTreeNode<?, ?>) map.table[7];
+        Iterator<Map.Entry<CKey, Integer>> it = map.entrySet().iterator();
+        while (it.next() != head) { }
+        it.remove();
+        assertNull(head.binRoot);
+        TreeBinInvariants.verify(map);
     }
 
     @Test

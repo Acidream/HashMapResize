@@ -65,6 +65,13 @@ public class RangeSplitHashMap<K,V> extends JdkHashMapCopy<K,V> {
         return new RangeTreeNode<>(p.hash, p.key, p.value, next);
     }
 
+    /** A removed head would otherwise keep its root pointer, and with it the rest of the bin. */
+    @Override
+    void afterNodeRemoval(Node<K,V> p) {
+        if (p instanceof RangeTreeNode<K,V> t)
+            t.binRoot = null;
+    }
+
     static final class RangeTreeNode<K,V> extends TreeNode<K,V> {
 
         /**
