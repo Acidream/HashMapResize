@@ -81,7 +81,7 @@ HashMap does not specify iteration order, so iterating tree bins in hash order i
   OpenJDK suite missed one of them, so it checks compatibility but is not enough on its own to
   verify the split.
 
-Total: 3,991 tests, all passing.
+Total: 3,994 tests, all passing.
 
 ## Benchmarks
 
@@ -112,21 +112,25 @@ HashMap's mean divided by RangeSplitHashMap's (above 1 means RangeSplitHashMap i
 
 | Keys | m | HashMap | JdkHashMapCopy | RangeSplitHashMap | vs HashMap |
 |---|---|---|---|---|---|
-| IDENTICAL | 64 | 4.76 ± 0.19 | 4.73 ± 0.20 | 0.57 ± 0.08 | 8.33× |
-| IDENTICAL | 1024 | 323 ± 23.7 | 291 ± 23.2 | 4.17 ± 0.95 | 78× |
-| IDENTICAL | 16384 | 22 648 ± 2 484 | 23 293 ± 1 975 | 24.2 ± 9.27 | 935× |
-| CLUSTERS_4 | 64 | 89.9 ± 3.11 | 85.1 ± 4.45 | 16.8 ± 0.39 | 5.34× |
-| CLUSTERS_4 | 1024 | 2 444 ± 79.0 | 2 351 ± 60.5 | 66.1 ± 5.95 | 37× |
-| CLUSTERS_4 | 16384 | 79 505 ± 8 939 | 73 204 ± 8 998 | 156 ± 18.0 | 511× |
-| DISTINCT | 64 | 48.7 ± 0.90 | 49.9 ± 0.50 | 51.5 ± 1.06 | 0.95× |
-| DISTINCT | 1024 | 1 497 ± 122 | 1 504 ± 97.8 | 1 292 ± 36.0 | 1.16× |
-| DISTINCT | 16384 | 53 674 ± 4 518 | 47 810 ± 3 771 | 27 284 ± 2 004 | 1.97× |
-| RANDOM | 64 | 12.5 ± 0.50 | 10.9 ± 0.24 | 11.0 ± 0.32 | 1.13× |
-| RANDOM | 1024 | 354 ± 47.6 | 317 ± 6.08 | 308 ± 4.95 | 1.15× |
-| RANDOM | 16384 | 14 980 ± 969 | 15 406 ± 910 | 15 645 ± 2 255 | 0.96× |
+| IDENTICAL | 64 | 4.81 ± 0.36 | 4.40 ± 0.07 | 0.82 ± 0.28 | 5.86× |
+| IDENTICAL | 1024 | 277 ± 17.6 | 247 ± 13.4 | 4.14 ± 0.60 | 67× |
+| IDENTICAL | 16384 | 23 145 ± 543 | 22 589 ± 3 722 | 31.2 ± 7.20 | 742× |
+| CLUSTERS_4 | 64 | 82.1 ± 0.81 | 92.1 ± 0.70 | 16.1 ± 0.50 | 5.11× |
+| CLUSTERS_4 | 1024 | 2 237 ± 46.9 | 2 204 ± 42.9 | 58.9 ± 2.36 | 38× |
+| CLUSTERS_4 | 16384 | 81 900 ± 16 383 | 70 169 ± 11 382 | 163 ± 21.9 | 504× |
+| DISTINCT | 64 | 45.9 ± 0.38 | 48.0 ± 0.26 | 49.0 ± 0.49 | 0.94× |
+| DISTINCT | 1024 | 1 336 ± 14.0 | 1 306 ± 18.9 | 1 247 ± 40.9 | 1.07× |
+| DISTINCT | 16384 | 48 299 ± 3 544 | 73 107 ± 27 341 | 27 092 ± 1 662 | 1.78× |
+| RANDOM | 64 | 10.3 ± 0.20 | 9.97 ± 0.23 | 12.8 ± 1.11 | 0.81× |
+| RANDOM | 1024 | 304 ± 4.06 | 306 ± 18.8 | 293 ± 3.76 | 1.04× |
+| RANDOM | 16384 | 14 998 ± 2 391 | 14 688 ± 1 531 | 14 396 ± 1 310 | 1.04× |
 
 For RANDOM the map is built at its natural size (list bins only), so this row is the ordinary
-resize and shows it is unaffected. Measured in JMH's sample mode, which times each call
+resize and the same code runs in all three maps. At m = 64 RangeSplitHashMap measured 12.8
+against about 10 for the other two, outside the intervals; an earlier run had 11.0 against
+10.9, and the larger sizes show no difference. When a whole bin moves to one side, the split
+also counts up to 7 nodes to turn a bin that has shrunk to 6 or fewer back into a list, as the
+JDK does; that is at most a few ns per bin. Measured in JMH's sample mode, which times each call
 separately, because a fresh map has to be built (untimed) before every resize.
 
 ### Insert and lookup
@@ -140,76 +144,80 @@ iterations). Where the intervals of two maps overlap, their difference is not si
 
 | Keys | m | HashMap | JdkHashMapCopy | RangeSplitHashMap | vs HashMap |
 |---|---|---|---|---|---|
-| IDENTICAL | 64 | 133 ± 32.1 | 112 ± 11.5 | 121 ± 8.45 | 1.10× |
-| IDENTICAL | 1024 | 4 120 ± 963 | 5 197 ± 2 588 | 3 734 ± 592 | 1.10× |
-| IDENTICAL | 16384 | 235 593 ± 48 655 | 249 815 ± 44 480 | 249 586 ± 113 858 | 0.94× |
-| CLUSTERS_4 | 64 | 129 ± 8.83 | 109 ± 10.3 | 130 ± 15.7 | 0.99× |
-| CLUSTERS_4 | 1024 | 3 676 ± 1 143 | 3 741 ± 1 140 | 3 697 ± 505 | 0.99× |
-| CLUSTERS_4 | 16384 | 229 518 ± 39 202 | 239 831 ± 108 857 | 231 120 ± 74 372 | 0.99× |
-| DISTINCT | 64 | 36.3 ± 2.25 | 24.7 ± 17.3 | 30.8 ± 9.83 | 1.18× |
-| DISTINCT | 1024 | 817 ± 159 | 907 ± 280 | 913 ± 407 | 0.90× |
-| DISTINCT | 16384 | 62 680 ± 13 537 | 84 677 ± 21 977 | 83 221 ± 26 660 | 0.75× |
-| RANDOM | 64 | 21.6 ± 3.04 | 20.5 ± 6.62 | 24.1 ± 6.14 | 0.90× |
-| RANDOM | 1024 | 639 ± 117 | 727 ± 254 | 635 ± 152 | 1.01× |
-| RANDOM | 16384 | 54 134 ± 22 337 | 62 305 ± 12 909 | 53 775 ± 28 361 | 1.01× |
+| IDENTICAL | 64 | 142 ± 28.0 | 128 ± 61.9 | 140 ± 14.8 | 1.02× |
+| IDENTICAL | 1024 | 9 113 ± 5 432 | 3 950 ± 836 | 4 208 ± 954 | 2.17× |
+| IDENTICAL | 16384 | 315 365 ± 195 967 | 269 842 ± 144 920 | 329 871 ± 516 676 | 0.96× |
+| CLUSTERS_4 | 64 | 136 ± 65.1 | 119 ± 28.5 | 155 ± 87.3 | 0.88× |
+| CLUSTERS_4 | 1024 | 8 540 ± 8 722 | 3 986 ± 2 245 | 6 302 ± 15 810 | 1.36× |
+| CLUSTERS_4 | 16384 | 307 351 ± 147 422 | 238 194 ± 90 356 | 316 912 ± 306 468 | 0.97× |
+| DISTINCT | 64 | 36.6 ± 44.0 | 25.6 ± 6.60 | 25.3 ± 13.2 | 1.44× |
+| DISTINCT | 1024 | 1 009 ± 424 | 860 ± 146 | 941 ± 210 | 1.07× |
+| DISTINCT | 16384 | 100 550 ± 46 358 | 123 754 ± 286 295 | 88 815 ± 44 316 | 1.13× |
+| RANDOM | 64 | 25.3 ± 5.88 | 21.4 ± 1.31 | 23.3 ± 4.90 | 1.09× |
+| RANDOM | 1024 | 717 ± 282 | 644 ± 104 | 738 ± 271 | 0.97× |
+| RANDOM | 16384 | 83 021 ± 100 934 | 68 937 ± 14 857 | 63 271 ± 33 385 | 1.31× |
 
 #### Insert into a fixed 64-bucket map (no resizes; every bin is a tree of about m nodes, even for RANDOM keys)
 
 | Keys | m | HashMap | JdkHashMapCopy | RangeSplitHashMap | vs HashMap |
 |---|---|---|---|---|---|
-| IDENTICAL | 64 | 109 ± 11.5 | 123 ± 70.3 | 116 ± 21.7 | 0.94× |
-| IDENTICAL | 1024 | 3 917 ± 1 900 | 3 852 ± 1 717 | 4 082 ± 1 128 | 0.96× |
-| IDENTICAL | 16384 | 183 283 ± 24 960 | 194 644 ± 27 912 | 234 443 ± 71 645 | 0.78× |
-| CLUSTERS_4 | 64 | 107 ± 18.1 | 111 ± 43.4 | 115 ± 11.2 | 0.92× |
-| CLUSTERS_4 | 1024 | 3 626 ± 462 | 3 981 ± 1 943 | 4 022 ± 797 | 0.90× |
-| CLUSTERS_4 | 16384 | 199 316 ± 64 257 | 187 413 ± 25 759 | 246 724 ± 69 474 | 0.81× |
-| DISTINCT | 64 | 61.4 ± 7.18 | 65.7 ± 12.7 | 77.1 ± 20.3 | 0.80× |
-| DISTINCT | 1024 | 2 362 ± 283 | 2 469 ± 531 | 3 093 ± 1 388 | 0.76× |
-| DISTINCT | 16384 | 189 030 ± 162 815 | 105 065 ± 14 343 | 117 815 ± 16 917 | 1.60× |
-| RANDOM | 64 | 56.5 ± 10.7 | 54.4 ± 16.6 | 70.3 ± 30.3 | 0.80× |
-| RANDOM | 1024 | 2 079 ± 330 | 2 310 ± 913 | 2 622 ± 1 073 | 0.79× |
-| RANDOM | 16384 | 144 124 ± 24 169 | 110 544 ± 9 352 | 167 905 ± 73 599 | 0.86× |
+| IDENTICAL | 64 | 157 ± 191 | 99.8 ± 15.4 | 117 ± 26.0 | 1.35× |
+| IDENTICAL | 1024 | 4 161 ± 1 323 | 3 645 ± 1 464 | 3 837 ± 1 049 | 1.08× |
+| IDENTICAL | 16384 | 215 081 ± 29 188 | 216 760 ± 37 262 | 208 099 ± 66 652 | 1.03× |
+| CLUSTERS_4 | 64 | 147 ± 204 | 109 ± 15.9 | 122 ± 27.1 | 1.20× |
+| CLUSTERS_4 | 1024 | 5 431 ± 7 635 | 3 610 ± 691 | 4 283 ± 1 689 | 1.27× |
+| CLUSTERS_4 | 16384 | 218 105 ± 39 394 | 225 000 ± 69 082 | 197 683 ± 44 872 | 1.10× |
+| DISTINCT | 64 | 106 ± 261 | 57.4 ± 9.69 | 73.4 ± 13.1 | 1.44× |
+| DISTINCT | 1024 | 3 376 ± 5 414 | 2 594 ± 859 | 2 429 ± 502 | 1.39× |
+| DISTINCT | 16384 | 123 945 ± 8 626 | 140 119 ± 44 527 | 117 956 ± 8 509 | 1.05× |
+| RANDOM | 64 | 86.1 ± 53.3 | 51.1 ± 9.93 | 66.0 ± 13.5 | 1.31× |
+| RANDOM | 1024 | 2 235 ± 793 | 2 636 ± 1 463 | 2 416 ± 459 | 0.92× |
+| RANDOM | 16384 | 118 605 ± 6 657 | 112 800 ± 14 865 | 135 470 ± 20 086 | 0.88× |
 
 #### Get every key (from a filled default map)
 
 | Keys | m | HashMap | JdkHashMapCopy | RangeSplitHashMap | vs HashMap |
 |---|---|---|---|---|---|
-| IDENTICAL | 64 | 86.5 ± 28.8 | 72.8 ± 8.88 | 74.2 ± 7.62 | 1.17× |
-| IDENTICAL | 1024 | 2 836 ± 632 | 2 705 ± 178 | 2 816 ± 428 | 1.01× |
-| IDENTICAL | 16384 | 245 580 ± 65 474 | 133 646 ± 25 942 | 177 174 ± 32 363 | 1.39× |
-| CLUSTERS_4 | 64 | 72.9 ± 21.7 | 62.6 ± 30.4 | 56.5 ± 10.3 | 1.29× |
-| CLUSTERS_4 | 1024 | 2 964 ± 1 523 | 2 345 ± 292 | 2 839 ± 2 966 | 1.04× |
-| CLUSTERS_4 | 16384 | 167 194 ± 78 498 | 151 043 ± 45 589 | 175 662 ± 17 671 | 0.95× |
-| DISTINCT | 64 | 5.12 ± 2.15 | 5.01 ± 3.14 | 7.08 ± 4.80 | 0.72× |
-| DISTINCT | 1024 | 316 ± 130 | 274 ± 35.6 | 390 ± 293 | 0.81× |
-| DISTINCT | 16384 | 15 628 ± 5 146 | 15 529 ± 4 919 | 15 198 ± 2 076 | 1.03× |
-| RANDOM | 64 | 3.48 ± 1.18 | 3.27 ± 1.25 | 2.79 ± 0.05 | 1.25× |
-| RANDOM | 1024 | 176 ± 71.0 | 129 ± 30.2 | 141 ± 33.7 | 1.25× |
-| RANDOM | 16384 | 10 504 ± 5 721 | 9 908 ± 4 659 | 9 072 ± 781 | 1.16× |
+| IDENTICAL | 64 | 75.3 ± 13.6 | 69.5 ± 8.97 | 73.6 ± 15.9 | 1.02× |
+| IDENTICAL | 1024 | 2 597 ± 198 | 3 002 ± 1 798 | 2 780 ± 760 | 0.93× |
+| IDENTICAL | 16384 | 155 794 ± 9 456 | 154 226 ± 37 037 | 165 213 ± 39 430 | 0.94× |
+| CLUSTERS_4 | 64 | 59.4 ± 9.63 | 53.6 ± 3.39 | 57.1 ± 14.4 | 1.04× |
+| CLUSTERS_4 | 1024 | 2 392 ± 441 | 2 304 ± 519 | 2 474 ± 354 | 0.97× |
+| CLUSTERS_4 | 16384 | 146 040 ± 7 666 | 141 615 ± 30 164 | 162 423 ± 24 376 | 0.90× |
+| DISTINCT | 64 | 3.59 ± 0.67 | 3.64 ± 0.19 | 4.08 ± 0.42 | 0.88× |
+| DISTINCT | 1024 | 258 ± 3.83 | 251 ± 10.6 | 279 ± 25.0 | 0.92× |
+| DISTINCT | 16384 | 13 606 ± 1 372 | 14 664 ± 4 762 | 19 453 ± 8 720 | 0.70× |
+| RANDOM | 64 | 2.92 ± 0.60 | 3.12 ± 1.14 | 2.92 ± 0.21 | 1.00× |
+| RANDOM | 1024 | 128 ± 3.36 | 125 ± 8.07 | 132 ± 37.1 | 0.97× |
+| RANDOM | 16384 | 7 972 ± 1 293 | 8 028 ± 2 044 | 13 301 ± 9 968 | 0.60× |
 
 How to read it:
 
 - **The RANDOM rows of the growing-map insert and of get show the noise floor.** There, with
   well-spread keys, there are no tree bins, so JdkHashMapCopy and RangeSplitHashMap run exactly the
-  same code; their means still differ by up to about 20%, with wide intervals. Note too that the
-  real HashMap and its verbatim copy differ by similar amounts.
+  same code; their means still differ by up to about 15%, and once by 66% (get, m = 16384:
+  13 301 ± 9 968 against 8 028). Note too that the real HashMap and its verbatim copy differ by
+  similar amounts.
 - **Growing maps (the normal way to fill a map)** show no difference beyond that noise.
-- **Inserting into large tree bins without resizes** is the one consistent cost: RangeSplitHashMap
-  is up to about 30% slower than JdkHashMapCopy at m ≤ 1024, and 12–52% at m = 16384, where
-  the intervals are widest. Each tree insert also moves the new node to its in-order place in the
-  chain. Before the root pointer was added this case was 30–90% slower, because every lookup and
-  insert first climbed from the table slot to the root.
-- **Lookups** show no consistent difference. The DISTINCT keys mostly end up in list bins, where
-  JdkHashMapCopy and RangeSplitHashMap run the same code; their 0.72× and 0.81× at m = 64 and
-  1024 come with intervals (± 4.80, ± 293) as large as the gap.
+- **Inserting into large tree bins without resizes** is where a cost shows: at m = 64
+  RangeSplitHashMap is 12–29% slower than JdkHashMapCopy in every row. At m = 1024 and 16384 it
+  ranges from 16% faster to 20% slower, inside the intervals. Each tree insert also moves the new
+  node to its in-order place in the chain. An earlier run measured up to 30% at m ≤ 1024 and
+  12–52% at m = 16384, so treat the size of this cost as uncertain. Before the root pointer was
+  added this case was 30–90% slower, because every lookup and insert first climbed from the table
+  slot to the root.
+- **Lookups** in tree bins (IDENTICAL, CLUSTERS_4) are within 15% of JdkHashMapCopy, with
+  overlapping intervals. The DISTINCT keys mostly end up in list bins, where both maps run the
+  same code, yet RangeSplitHashMap measured 11–12% slower at m = 64 and 1024 with intervals that
+  barely miss each other; at m = 16384 its 0.70× comes with an interval (± 8 720) half the mean.
 - **Rows where "vs HashMap" is far from 1 for reasons other than the range split:**
-  - insert into a growing map, DISTINCT, m = 16384: 0.75×. JdkHashMapCopy is just as slow
-    (84 677 against RangeSplitHashMap's 83 221), so the gap is between the JDK's own class and
-    its copy, not the range split.
-  - insert into a fixed map, DISTINCT, m = 16384: 1.60×. HashMap's interval (± 162 815) is
-    nearly as large as its mean, so a few slow iterations inflated it; this is not a real speedup.
-  - get, IDENTICAL, m = 16384: 1.39×. HashMap again differs from its own copy (245 580 against
-    133 646), so this is not a real speedup either.
+  - insert into a growing map, IDENTICAL and CLUSTERS_4, m = 1024: 2.17× and 1.36×. HashMap
+    differs from its own copy (9 113 against 3 950, and 8 540 ± 8 722 against 3 986), so these
+    are not real speedups.
+  - insert into a fixed map, all m = 64 rows and DISTINCT m = 1024: 1.20–1.44×. HashMap's
+    intervals are larger than its means (± 191, ± 204, ± 261, ± 5 414), so a few slow iterations
+    inflated them; compare with JdkHashMapCopy there instead.
+  - get, RANDOM, m = 16384: 0.60×. No tree bins, so this is the noise described above.
 <!-- /insert-lookup-results -->
 
 ## Where this matters

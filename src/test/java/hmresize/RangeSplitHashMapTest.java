@@ -1,7 +1,9 @@
 package hmresize;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -165,6 +167,42 @@ class RangeSplitHashMapTest {
             assertEquals(ref.put(extra, round), map.put(extra, round));
             TreeBinInvariants.verify(map);
         }
+    }
+
+    /**
+     * Deleting through an iterator never untreeifies, so a tree bin can shrink below
+     * UNTREEIFY_THRESHOLD; the next resize must turn it back into a plain bin even when the
+     * whole bin moves to one side, as the JDK split does.
+     */
+    @ParameterizedTest(name = "rangeSplit={0}")
+    @ValueSource(booleans = {true, false})
+    void smallTreeBinUntreeifiedWhenMovedWhole(boolean rangeSplit) {
+        // Treeifying needs a table of at least 64.
+        JdkHashMapCopy<CKey, Integer> map = rangeSplit ? new RangeSplitHashMap<>(64) : new JdkHashMapCopy<>(64);
+        Map<CKey, Integer> ref = new HashMap<>();
+        for (int id = 0; id < 12; id++) { // all with hash 5: one prefix at every table size
+            CKey key = new CKey(id, TreeHashMap.unspread(5));
+            map.put(key, id);
+            ref.put(key, id);
+        }
+        assertTrue(map.table[5] instanceof JdkHashMapCopy.TreeNode);
+        Iterator<Map.Entry<CKey, Integer>> it = map.entrySet().iterator();
+        while (it.hasNext()) {
+            CKey key = it.next().getKey();
+            if (key.id() >= 2) {
+                it.remove();
+                ref.remove(key);
+            }
+        }
+        int cap = map.table.length;
+        for (int id = 100; map.table.length == cap; id++) {
+            CKey key = new CKey(id, TreeHashMap.unspread(id << 10 | 1));
+            map.put(key, id);
+            ref.put(key, id);
+        }
+        assertFalse(map.table[5] instanceof JdkHashMapCopy.TreeNode);
+        TreeBinInvariants.verify(map);
+        assertEquals(ref, map);
     }
 
     /** A removed bin head must not keep the root pointer, which would keep the rest of the bin reachable. */

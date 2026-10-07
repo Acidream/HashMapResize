@@ -136,13 +136,13 @@ public class RangeSplitHashMap<K,V> extends JdkHashMapCopy<K,V> {
                 tail = tail.right;
             int s = Integer.numberOfTrailingZeros(bit);
             if ((head.hash >> s) == (tail.hash >> s)) { // one prefix: the bin moves as is
-                tab[(head.hash & bit) == 0 ? index : index + bit] = head;
+                RangeSplitter.finish(map, tab, root, head, tail, (head.hash & bit) == 0 ? index : index + bit);
                 return;
             }
             RangeSplitter<K,V> sp = new RangeSplitter<>(bit, head, tail);
             sp.partition(root, blackHeight(root), head.hash, tail.hash, null, null);
-            sp.finish(map, tab, sp.lo, sp.loHead, sp.loTail, index);
-            sp.finish(map, tab, sp.hi, sp.hiHead, sp.hiTail, index + bit);
+            RangeSplitter.finish(map, tab, sp.lo, sp.loHead, sp.loTail, index);
+            RangeSplitter.finish(map, tab, sp.hi, sp.hiHead, sp.hiTail, index + bit);
         }
 
         /** Relinks the chain of the tree at root in tree order, headed by the bin's slot. */
@@ -315,7 +315,7 @@ public class RangeSplitHashMap<K,V> extends JdkHashMapCopy<K,V> {
         }
 
         /** Stores one side in its slot, untreeifying it if small (as the JDK split does). */
-        void finish(JdkHashMapCopy<K,V> map, Node<K,V>[] tab, TreeNode<K,V> root,
+        static <K,V> void finish(JdkHashMapCopy<K,V> map, Node<K,V>[] tab, TreeNode<K,V> root,
                     TreeNode<K,V> head, TreeNode<K,V> tail, int index) {
             if (head == null)
                 return;
